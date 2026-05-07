@@ -366,5 +366,6 @@ map → odom → base_footprint → base_link → lidar_link
 
 ---
 
+#### This document serves as a consolidated summary of Testbot's design progress (to be revised), challenges faced, and solutions implemented.
 
 

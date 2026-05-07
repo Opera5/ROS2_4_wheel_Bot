@@ -2,6 +2,7 @@
 
 Testbot is a ROS 2 (Humble) differential-drive robot package built for autonomous navigation in simulation. It integrates Gazebo Fortress (Ignition), Nav2, SLAM Toolbox, AMCL, and `ros2_control` for a full navigation stack — from mapping to localization to goal-based path planning.
 
+### Note: Change the Folder name to testbot(package name) or edit xm and CMakelist accordingly before building
 ---
 
 ## Table of Contents
@@ -305,7 +306,7 @@ map → odom → base_footprint → base_link → lidar_link
 
 ---
 
-## Troubleshooting
+## Challenges and Troubleshooting
 
 ### Maps not showing in RViz
 - Confirm `localization_launch.py` is receiving the `map` argument — check terminal output for `map_server` startup logs
@@ -322,6 +323,7 @@ map → odom → base_footprint → base_link → lidar_link
 - Confirm the global and local costmaps are receiving scan data: `ros2 topic hz /global_costmap/costmap`
 
 ### LIDAR rays misaligned in Gazebo
+![Screenshot from 2025-02-28 14-29-13](https://github.com/user-attachments/assets/b3c83e36-0250-4c98-bad1-50bb0546a82d)
 - Caused by fixed joint lumping when converting URDF to SDF. Ensure the following is in your xacro for the lidar joint:
 ```xml
 <gazebo reference="laser_joint">
@@ -350,7 +352,6 @@ map → odom → base_footprint → base_link → lidar_link
 - [ ] Optimize MPPI controller parameters for smoother trajectories
 - [ ] Add 3D obstacle avoidance using PointCloud2 from LIDAR
 - [ ] Validate navigation stack on physical hardware
-- [ ] Add a `data_extract.launch.py` documentation section for sensor calibration workflows
 
 ---
 
@@ -363,3 +364,4 @@ map → odom → base_footprint → base_link → lidar_link
 > Map generated after resolving TF frame alignment issue
 
 ![Resolved SLAM map](https://github.com/user-attachments/assets/4e8abd2e-03ae-41ec-b404-2a82de2e6a18)
+

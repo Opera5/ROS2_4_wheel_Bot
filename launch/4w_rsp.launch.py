@@ -115,7 +115,7 @@ def generate_launch_description():
             output='screen',
             additional_env=gz_env, # type: ignore
             shell=False,
-        )
+        ) 
     ]
 
     spawn_entity = Node(
@@ -197,6 +197,20 @@ def generate_launch_description():
         output="screen",
     )
 
+    load_diff_drive_controller = ExecuteProcess(
+        name="activate_diff_drive_base_controller",
+        cmd=["ros2", "control", "load_controller", "--set-state", "active", "diff_drive_base_controller"],
+        shell=False,
+        output="screen",
+    )
+
+    load_imu_broadcaster = ExecuteProcess(
+        name="activate_imu_broadcaster",
+        cmd=["ros2", "control", "load_controller", "--set-state", "active", "imu_broadcaster"],
+        shell=False,
+        output="screen",
+    )
+
     relay_odom = Node(
         name="relay_odom",
         package="topic_tools",
@@ -222,7 +236,15 @@ def generate_launch_description():
         ],
         output="screen",
     )
-      
+    
+    controller_config = os.path.join(pkg_path, 'config', '4w_diff_drive_controller_velocity.yaml')
+    ros2_control_node = Node(
+    package='controller_manager',
+    executable='ros2_control_node',
+    parameters=[controller_config],
+    output='screen'
+    )
+
     # Launch!
     return LaunchDescription([
             SetEnvironmentVariable(
@@ -286,13 +308,19 @@ def generate_launch_description():
             RegisterEventHandler(
                 event_handler=OnProcessExit(
                     target_action=load_joint_state_controller,
-                    on_exit=[load_joint_trajectory_controller],
+                    on_exit=[load_diff_drive_controller],
                 )
             ),
+            
+            RegisterEventHandler(
+                event_handler=OnProcessExit(
+                    target_action=load_diff_drive_controller,
+                      on_exit=[load_imu_broadcaster])),
             robot_state_pub,
             relay_odom,
             ekfloc_node,
             relay_cmd_vel,
+            ros2_control_node,
             #twistmux,
             joint_state_publisher_node,
         ]

@@ -1,180 +1,365 @@
-# Testbot updated V0
+# Testbot — ROS 2 Navigation & Simulation Package
 
-Testbot is being developed as a ROS2-based (Humble Distribution) robotic system integrating navigation, control, and sensor fusion. It utilizes Gazebo Fortress with Husarion World model for simulation and ros2_control for managing actuator control. The robot is designed for autonomous navigation, leveraging LIDAR, IMU, and odometry sensors for localization and path planning.
-
-## Key Components and Features
-
-### 1. Simulation & Modeling
-
-  #### Implemented robot URDF and SDF models.
-
- #### Integrated Gazebo Fortress for realistic physics-based simulation.
- #### added [Husarion](https://husarion.com/tutorials/howtostart/rosbotxl-quick-start/) world for a complex world to simulate the Navigation/mapping
-
-#### Configured LIDAR and other sensors for environment perception(to be added).
-
-### 2. Control System
-
-#### Configured diff_drive_controller for wheel-based movement.
-
-#### Integrated joint_state_publisher for robot state representation.
-
-#### Used ros2_control for hardware abstraction and control management.
-
-### 3. Navigation & Localization
-
-#### Utilized ros_gz_bridge for ROS-Gazebo communication.
-
-#### Integrated joint_state_broadcaster for sensor data streaming.
-
-#### Works on fusing odometry, LIDAR data for environmental perception and mapping and IMU data for stable motion tracking.
-
-> below is a picture of the Testbot in different(TurtleBot Arena and Husarion) world and the TF tree
-![Screenshot from 2025-02-28 14-45-56](https://github.com/user-attachments/assets/fa275afd-6fe1-4251-8eb2-502beef356f6)
-![Screenshot from 2025-02-28 14-24-16](https://github.com/user-attachments/assets/26ac0b15-961a-4dd8-9d2d-2f8a9f808fb3)![Screenshot from 2025-02-28 14-26-11](https://github.com/user-attachments/assets/4479aa42-eeda-4079-b791-50568485f316)
-
-
-## Challenges Faced & Solutions Implemented(troubleshoot)
-
-### LIDAR Visualization Error
-
-Issue: 'Error entity lidar_link doesn't exist and cannot be used to set lidar visual pose' which results in LIDAR showing LIDAR ray in a position not from the URDF translated position
-![Screenshot from 2025-02-28 14-29-13](https://github.com/user-attachments/assets/b3c83e36-0250-4c98-bad1-50bb0546a82d)
-
-> Cause/reason
-##### Lidar Link Joint is not well declared or positioned in the URDF which results in a bad Transform
-##### '<ignition_frame_id>' issue as joint gets removed when converting the URDF to SDFormat due to what's called 'Fixed Joint Lumping'
-> Solutions: 
-##### Ensured lidar_link is correctly defined in URDF and checked TF tree consistency.
-#####  include the Fixed_joint_Lumping Tag block 
-    <gazebo reference='laser_joint'>       
-    <preserveFixedJoint>true</preserveFixedJoint>
-    </gazebo>
-
-#### ROS2 Package Dependency Issues
-
-> Issue: Missing ament_cmake, ros_ign_bridge, and ros_gz_bridge during compilation.
-
->Solution: Verified and installed missing dependencies, updated CMAKE_PREFIX_PATH.
-
-#### Docker & NVIDIA GPU Issues
-
->Issue: nvidia-container-cli: initialization error: nvml error: driver not loaded
-
->Solution: Reinstalled NVIDIA drivers and ensured proper configuration of the NVIDIA Container Toolkit.
-
-#### TF Frame Misalignment & World Rotation
-
-> Issue: World in RViz rotated unexpectedly when the bot moved, which cause generation distorted map while performing SLAM
-![WhatsApp Image 2025-01-31 at 4 05 24 PM](https://github.com/user-attachments/assets/09e742e6-99db-4a75-93c8-2361319d9a77)
-
-
->Solutions:
-> a. Corrected odom frame reference in TF tree, verified IMU data, and adjusted navigation parameters.
-
-> b. Reducing bot rotation speed in the Teleoperate function allows the bot to reset the scan position after being rotated.
-> checkout the created Map after issue resolved
-![Screenshot from 2025-02-28 16-47-36](https://github.com/user-attachments/assets/4e8abd2e-03ae-41ec-b404-2a82de2e6a18)
-
-
-#### Control Activation Errors
-
-Issue: ros2 control load_controller --set-state active failing due to missing controllers.
-
-Solution: Ensured ros2_control components were properly loaded and configuration files were correctly structured.
-
-## 🐞 Known Issues and Troubleshooting (ROS 2 Nav2 - Humble)
-
-Below is a list of issues encountered during the setup and launch of Nav2, along with debugging steps and solutions.
+Testbot is a ROS 2 (Humble) differential-drive robot package built for autonomous navigation in simulation. It integrates Gazebo Fortress (Ignition), Nav2, SLAM Toolbox, AMCL, and `ros2_control` for a full navigation stack — from mapping to localization to goal-based path planning.
 
 ---
 
-### ❌ 1. RViz Not Launching
+## Table of Contents
 
-**Symptoms:**
-- `rviz2` does not appear when launching.
-- No GUI, or RViz silently crashes.
+- [Requirements](#requirements)
+- [Package Structure](#package-structure)
+- [Installation & Build](#installation--build)
+- [Usage](#usage)
+  - [1. Simulation Only (Gazebo + RViz)](#1-simulation-only-gazebo--rviz)
+  - [2. SLAM Mapping](#2-slam-mapping)
+  - [3. SLAM Localization (on saved map)](#3-slam-localization-on-saved-map)
+  - [4. AMCL Localization (standalone)](#4-amcl-localization-standalone)
+  - [5. Full Navigation (Nav2 + AMCL)](#5-full-navigation-nav2--amcl)
+  - [6. Saving a Map](#6-saving-a-map)
+- [Configuration Files](#configuration-files)
+- [Key Components](#key-components)
+- [Troubleshooting](#troubleshooting)
+- [Next Steps](#next-steps)
 
-**Possible Causes:**
-- Incorrect or missing `.rviz` config file.
-- RViz node misconfigured in launch file.
-- Missing display environment if running remotely (e.g., via SSH).
+---
 
-**Solutions:**
-- Ensure the RViz config file exists: `testbot/rviz/amcl.rviz`
-- Replace RViz node parameters:
-  ```python
-  parameters=[{'use_sim_time': use_sim_time}]
-  
-### ❌ ROS 2 Navigation Launch Error: `yaml_filename` Not Initialized
+## Requirements
 
-- [ERROR] [map_server]: Original error: parameter 'yaml_filename' is not initialized
-- [FATAL] [map_server]: Lifecycle node map_server does not have error state implemented
+| Dependency | Version |
+|---|---|
+| ROS 2 | Humble |
+| Gazebo | Fortress (Ignition) |
+| Nav2 | Humble |
+| SLAM Toolbox | Humble |
+| ros2_control | Humble |
+| robot_localization | Humble |
+| topic_tools | Humble |
+| twist_mux | Humble |
 
-#### ✅ Fix
+Install all ROS 2 dependencies:
 
-Ensure your **launch file** (e.g., `nav.launch.py`) includes the `yaml_filename` parameter for the `map_server` node.
+```bash
+cd ~/botdev
+rosdep install --from-paths src --ignore-src -r -y
+```
 
-#### 🔧 Python Launch File Example
+---
 
-- Replace RViz node parameters:
-  ```python
-  from launch_ros.actions import Node
+## Package Structure
 
-  map_yaml_file = '/path/to/your/map.yaml'
+```
+testbot/
+├── config/
+│   ├── nav.yaml                  # Nav2 full stack parameters (costmaps, planner, controller)
+│   ├── amcloc.yaml               # AMCL localization parameters
+│   ├── slam_map.yaml             # SLAM Toolbox mapping parameters
+│   ├── slam_loc.yaml             # SLAM Toolbox localization parameters
+│   ├── ekf.yaml                  # robot_localization EKF parameters
+│   ├── twistmux.yaml             # Twist multiplexer configuration
+│   └── 4w_diff_drive_controller_velocity.yaml  # ros2_control diff drive config
+├── description/
+│   └── 4w_testbot.xacro          # Main robot URDF/Xacro model
+├── launch/
+│   ├── 4w_rsp.launch.py          # Core launch: Gazebo, RSP, EKF, bridges, controllers
+│   ├── slamap.launch.py          # SLAM mapping mode
+│   ├── slamloc.launch.py         # SLAM localization mode (on existing map)
+│   ├── amcloc.launch.py          # Standalone AMCL localization
+│   └── nav.launch.py             # Full Nav2 navigation (AMCL + Nav2 + RViz)
+├── maps/
+│   ├── testv1.yaml / testv1.pgm  # Default navigation map
+│   ├── testhus_map.yaml / .pgm   # Husarion world map
+│   └── v2.yaml / v2.pgm          # Alternative map
+├── rviz/
+│   ├── nav.rviz                  # Navigation RViz config (Nav2 + costmaps)
+│   ├── async_map.rviz            # SLAM mapping RViz config
+│   └── amcl.rviz                 # AMCL localization RViz config
+└── worlds/
+    └── husarion_world.sdf        # Husarion simulation world
+```
 
-  map_server_node = Node(
-    package='nav2_map_server',
-    executable='map_server',
-    name='map_server',
-    output='screen',
-    parameters=[{'yaml_filename': map_yaml_file}]
-  )
-- Insert the Map full path in .yaml file
-  ```yaml
-  map_server:
-  ros__parameters:
-    use_sim_time: true
-    yaml_filename: "/path/to/your/map.yaml"
-### ❌ Failed to create global planner.:
+---
 
-* Error Summary
-  ```vbnet
-  Failed to create global planner.
-  Exception: According to the loaded plugin descriptions the class nav2_navfn_planner::NavfnPlanner with base class type nav2_core::GlobalPlanner does not exist.
-  Declared types are: 
-   - nav2_navfn_planner/NavfnPlanner 
-   - nav2_smac_planner/SmacPlanner2D 
-   - nav2_smac_planner/SmacPlannerHybrid 
-   - nav2_smac_planner/SmacPlannerLattice 
-   -  nav2_theta_star_planner/ThetaStarPlanner
- *  ✅ Fix
-  -The correct plugin class string must match exactly what the system has registered(change in your navigation.yaml):
-    ```yaml
-    planner_server:
-      ros__parameters:
-      planner_plugins: ["GridBased"]
-      GridBased:
-        plugin: "nav2_navfn_planner/NavfnPlanner"
-    
-  -This should also be changed for the following plugins:
-    
-        plugin: "nav2_behaviors/Spin"
-        plugin: "nav2_behaviors/Backup"
-        plugin: "nav2_behaviors/Wait"
-   
-    
-  
-Next Steps
+## Installation & Build
 
-Improve localization stability using SLAM techniques.
+```bash
+# Clone into your workspace (if not already present)
+cd ~/botdev/src
 
-Optimize motion control parameters for better trajectory accuracy.
+# Build the package
+cd ~/botdev
+colcon build --packages-select testbot --symlink-install
 
-Implement obstacle avoidance using LIDAR data.
+# Source the workspace
+source install/setup.bash
+```
 
-Transition to a physical test environment after stable simulation validation.
+> Use `--symlink-install` during development so changes to launch files, configs, and RViz files take effect without rebuilding.
 
-This document serves as a consolidated summary of Testbot's design progress (to be revised), challenges faced, and solutions implemented.
+---
 
+## Usage
 
+All launch commands assume you have sourced your workspace:
+
+```bash
+source ~/botdev/install/setup.bash
+```
+
+---
+
+### 1. Simulation Only (Gazebo + RViz)
+
+Launches Gazebo Fortress with the robot, `robot_state_publisher`, EKF, ros2_control, and sensor bridges. No navigation stack.
+
+```bash
+ros2 launch testbot 4w_rsp.launch.py
+```
+
+Optional arguments:
+
+| Argument | Default | Description |
+|---|---|---|
+| `use_sim_time` | `true` | Use Gazebo simulation clock |
+| `use_rviz` | `true` | Launch RViz |
+| `run_headless` | `false` | Run Gazebo without GUI |
+| `gz_verbosity` | `3` | Gazebo log verbosity (0–4) |
+| `log_level` | `warn` | ROS 2 node log level |
+
+Example — run headless:
+
+```bash
+ros2 launch testbot 4w_rsp.launch.py run_headless:=true use_rviz:=false
+```
+
+---
+
+### 2. SLAM Mapping
+
+Launches Gazebo + SLAM Toolbox in online async mode. Drive the robot around to build a map.
+
+```bash
+ros2 launch testbot slamap.launch.py
+```
+
+Optional arguments:
+
+| Argument | Default | Description |
+|---|---|---|
+| `use_sim_time` | `true` | Use simulation clock |
+| `rviz` | `true` | Launch RViz |
+| `rviz_config` | `async_map.rviz` | RViz config file name |
+
+Teleoperate the robot to map the environment:
+
+```bash
+ros2 run teleop_twist_keyboard teleop_twist_keyboard --ros-args -r /cmd_vel:=/cmd_vel
+```
+
+When done mapping, save the map (see [Saving a Map](#6-saving-a-map)).
+
+---
+
+### 3. SLAM Localization (on saved map)
+
+Localizes the robot on a previously saved map using SLAM Toolbox in localization mode.
+
+```bash
+ros2 launch testbot slamloc.launch.py
+```
+
+Optional arguments:
+
+| Argument | Default | Description |
+|---|---|---|
+| `use_sim_time` | `true` | Use simulation clock |
+| `rviz` | `true` | Launch RViz |
+| `rviz_config` | `async_map.rviz` | RViz config file name |
+
+> Make sure the serialized map files (`serialized.data` / `serialized.posegraph`) are referenced in `config/slam_loc.yaml`.
+
+---
+
+### 4. AMCL Localization (standalone)
+
+Launches map server + AMCL + lifecycle manager for localization only, without the full Nav2 stack.
+
+```bash
+ros2 launch testbot amcloc.launch.py
+```
+
+Optional arguments:
+
+| Argument | Default | Description |
+|---|---|---|
+| `map` | `maps/testhus_map.yaml` | Full path to map YAML file |
+
+Use a different map:
+
+```bash
+ros2 launch testbot amcloc.launch.py map:=/path/to/your_map.yaml
+```
+
+---
+
+### 5. Full Navigation (Nav2 + AMCL)
+
+Launches the complete navigation stack: Gazebo, robot, AMCL localization, Nav2 (planner + controller + costmaps), and RViz with the Nav2 panel.
+
+```bash
+ros2 launch testbot nav.launch.py
+```
+
+Optional arguments:
+
+| Argument | Default | Description |
+|---|---|---|
+| `yaml_filename` | `maps/testv1.yaml` | Map file for localization |
+| `nav_params_file` | `config/nav.yaml` | Nav2 parameters file |
+| `loc_params_file` | `config/amcloc.yaml` | AMCL parameters file |
+| `use_sim_time` | `true` | Use simulation clock |
+
+Use a different map:
+
+```bash
+ros2 launch testbot nav.launch.py yaml_filename:=/full/path/to/map.yaml
+```
+
+Once launched:
+1. RViz opens with the Nav2 panel on the left
+2. Use **2D Pose Estimate** in RViz to set the robot's initial position on the map
+3. Use **Nav2 Goal** in RViz (or the Nav2 panel) to send a navigation goal
+4. The robot will plan and follow a path autonomously
+
+---
+
+### 6. Saving a Map
+
+After mapping with SLAM, save the map using `nav2_map_server`:
+
+```bash
+ros2 run nav2_map_server map_saver_cli -f ~/botdev/src/testbot/maps/my_map
+```
+
+This creates `my_map.pgm` and `my_map.yaml` in the maps directory. Then rebuild so the new map is installed:
+
+```bash
+cd ~/botdev && colcon build --packages-select testbot --symlink-install
+```
+
+---
+
+## Configuration Files
+
+### `config/nav.yaml`
+Full Nav2 parameter file covering:
+- **AMCL** — particle filter localization (differential motion model)
+- **bt_navigator** — behavior tree navigator
+- **controller_server** — MPPI controller for local path following
+- **local_costmap** — rolling window costmap using VoxelLayer + InflationLayer
+- **global_costmap** — static + obstacle + inflation layers
+- **planner_server** — SmacPlannerHybrid (Dubins motion model)
+- **behavior_server** — spin, backup, drive_on_heading, wait behaviors
+- **velocity_smoother** — smooths cmd_vel output
+- **collision_monitor** — footprint-based approach collision checking
+
+### `config/amcloc.yaml`
+Standalone AMCL parameters used by `amcloc.launch.py` and `nav.launch.py` for localization.
+
+### `config/ekf.yaml`
+`robot_localization` EKF node configuration for fusing wheel odometry and IMU data into a stable `/odom` estimate.
+
+### `config/slam_map.yaml` / `config/slam_loc.yaml`
+SLAM Toolbox parameters for online async mapping and localization modes respectively.
+
+---
+
+## Key Components
+
+### Robot Model
+- Defined in `description/4w_testbot.xacro`
+- 4-wheel differential drive with `base_footprint`, `base_link`, `lidar_link`, `imu_link`, `camera_link`
+- Gazebo plugins: diff drive controller, LIDAR (LaserScan), IMU, camera
+
+### Sensor Bridges (`4w_rsp.launch.py`)
+The `ros_gz_bridge` node bridges the following topics from Ignition to ROS 2:
+
+| Ignition Topic | ROS 2 Topic | Message Type |
+|---|---|---|
+| `/scan` | `/scan` | `sensor_msgs/LaserScan` |
+| `/imu` | `/imu` | `sensor_msgs/Imu` |
+| `/clock` | `/clock` | `rosgraph_msgs/Clock` |
+| `/scan/points` | `/scan/points` | `sensor_msgs/PointCloud2` |
+
+### Control Pipeline
+```
+Nav2 cmd_vel → twist_mux → /cmd_vel → relay → diff_drive_base_controller → wheels
+```
+
+### TF Tree
+```
+map → odom → base_footprint → base_link → lidar_link
+                                         → imu_link
+                                         → camera_link → camera_frame
+                                         → fl_wheel / fr_wheel / rl_wheel / rr_wheel
+```
+
+---
+
+## Troubleshooting
+
+### Maps not showing in RViz
+- Confirm `localization_launch.py` is receiving the `map` argument — check terminal output for `map_server` startup logs
+- In RViz, verify the `Map` display under the Displays panel is enabled and subscribed to `/map` with `Durability: Transient Local`
+- Check that AMCL is active: `ros2 lifecycle get /amcl`
+
+### AMCL not localizing / particle cloud scattered
+- Set a **2D Pose Estimate** in RViz to give AMCL an initial position hint
+- Ensure `/scan` topic is publishing: `ros2 topic hz /scan`
+- Verify `base_frame_id` in `amcloc.yaml` matches your URDF (`base_footprint`)
+
+### Navigation goals not being accepted
+- Check all Nav2 nodes are in `active` lifecycle state: `ros2 lifecycle get /bt_navigator`
+- Confirm the global and local costmaps are receiving scan data: `ros2 topic hz /global_costmap/costmap`
+
+### LIDAR rays misaligned in Gazebo
+- Caused by fixed joint lumping when converting URDF to SDF. Ensure the following is in your xacro for the lidar joint:
+```xml
+<gazebo reference="laser_joint">
+  <preserveFixedJoint>true</preserveFixedJoint>
+</gazebo>
+```
+
+### `ros2 control load_controller` fails
+- Controllers must be loaded after `spawn_entity` completes. The launch file handles this via `RegisterEventHandler` / `OnProcessExit` chains — check that `spawn_entity` succeeded first
+- Verify controller names match those in `4w_diff_drive_controller_velocity.yaml`
+
+### TF world rotation / distorted SLAM map
+- Caused by `odom` frame drift from IMU noise during fast rotation
+- Reduce rotational speed during teleoperation while mapping
+- Verify EKF is running and fusing IMU + odom: `ros2 topic echo /odometry/filtered`
+
+### NVIDIA GPU / Docker issues
+- If you see `nvml error: driver not loaded`, reinstall NVIDIA drivers and reconfigure the NVIDIA Container Toolkit
+- Verify with: `nvidia-smi`
+
+---
+
+## Next Steps
+
+- [ ] Improve localization stability with better EKF tuning
+- [ ] Optimize MPPI controller parameters for smoother trajectories
+- [ ] Add 3D obstacle avoidance using PointCloud2 from LIDAR
+- [ ] Validate navigation stack on physical hardware
+- [ ] Add a `data_extract.launch.py` documentation section for sensor calibration workflows
+
+---
+
+> Robot shown in Husarion world and TurtleBot Arena with TF tree visualization
+
+![Testbot in simulation](https://github.com/user-attachments/assets/fa275afd-6fe1-4251-8eb2-502beef356f6)
+![Testbot TF tree](https://github.com/user-attachments/assets/26ac0b15-961a-4dd8-9d2d-2f8a9f808fb3)
+![Testbot world view](https://github.com/user-attachments/assets/4479aa42-eeda-4079-b791-50568485f316)
+
+> Map generated after resolving TF frame alignment issue
+
+![Resolved SLAM map](https://github.com/user-attachments/assets/4e8abd2e-03ae-41ec-b404-2a82de2e6a18)

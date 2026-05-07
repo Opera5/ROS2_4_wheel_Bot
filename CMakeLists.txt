@@ -40,6 +40,17 @@ if(POLICY CMP0009)
   cmake_policy(SET CMP0009 NEW)
 endif()
 
+# Install Python src
+install(PROGRAMS
+  src/extract_velodyne_pointcloud.py
+  src/extract_velodyne_with_tf.py
+  src/extract_tf_poses.py
+  src/extract_zed_pointcloud.py
+  src/extract_2d_laser.py
+  src/extract_zed_data.py
+  src/zed_rgb_extract.py
+  DESTINATION lib/${PROJECT_NAME}
+)
 
 install(
   DIRECTORY src launch rviz config worlds models include description maps

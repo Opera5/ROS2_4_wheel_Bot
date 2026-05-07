@@ -2,7 +2,7 @@
 
 Testbot is a ROS 2 (Humble) differential-drive robot package built for autonomous navigation in simulation. It integrates Gazebo Fortress (Ignition), Nav2, SLAM Toolbox, AMCL, and `ros2_control` for a full navigation stack — from mapping to localization to goal-based path planning.
 
-### Note: Change the Folder name to testbot(package name) or edit xm and CMakelist accordingly before building
+### Note: Change the Folder name to "testbot" (package name) or edit xml and CMakelist accordingly before building
 ---
 
 ## Table of Contents
@@ -23,6 +23,12 @@ Testbot is a ROS 2 (Humble) differential-drive robot package built for autonomou
 - [Next Steps](#next-steps)
 
 ---
+
+> Robot shown in Husarion world and TurtleBot Arena with TF tree visualization
+
+![Testbot in simulation](https://github.com/user-attachments/assets/fa275afd-6fe1-4251-8eb2-502beef356f6)
+![Testbot TF tree](https://github.com/user-attachments/assets/26ac0b15-961a-4dd8-9d2d-2f8a9f808fb3)
+![Testbot world view](https://github.com/user-attachments/assets/4479aa42-eeda-4079-b791-50568485f316)
 
 ## Requirements
 
@@ -359,12 +365,6 @@ map → odom → base_footprint → base_link → lidar_link
 - [ ] Validate navigation stack on physical hardware
 
 ---
-
-> Robot shown in Husarion world and TurtleBot Arena with TF tree visualization
-
-![Testbot in simulation](https://github.com/user-attachments/assets/fa275afd-6fe1-4251-8eb2-502beef356f6)
-![Testbot TF tree](https://github.com/user-attachments/assets/26ac0b15-961a-4dd8-9d2d-2f8a9f808fb3)
-![Testbot world view](https://github.com/user-attachments/assets/4479aa42-eeda-4079-b791-50568485f316)
 
 
 

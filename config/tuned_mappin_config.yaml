@@ -1,0 +1,68 @@
+slam_toolbox:
+  ros__parameters:
+    # Solver Parameters
+    solver_plugin: solver_plugins::CeresSolver
+    ceres_linear_solver: SPARSE_NORMAL_CHOLESKY
+    ceres_preconditioner: SCHUR_JACOBI
+    ceres_trust_strategy: LEVENBERG_MARQUARDT
+    ceres_dogleg_type: TRADITIONAL_DOGLEG
+    ceres_loss_function: None
+    ceres_options:
+      num_threads: 4  # Reduced for lower CPU load
+      max_iterations: 100  # Added for faster optimization
+
+    # ROS Parameters
+    odom_frame: odom
+    map_frame: map
+    base_frame: base_footprint
+    scan_topic: /scan
+    scan_queue_size: 10  # Added to buffer LIDAR messages
+    use_map_saver: true
+    mode: mapping
+    debug_logging: true
+    throttle_scans: 1
+    transform_publish_period: 0.02  # Verify odom/scan rates
+    map_update_interval: 1.0
+    resolution: 0.05
+    min_laser_range: 0.0
+    max_laser_range: 10.0
+    minimum_time_interval: 0.025  # Increased to 40 Hz for real-time processing
+    transform_timeout: 0.5  # Increased to handle TF latency
+    tf_buffer_duration: 30.0
+    stack_size_to_use: 40000000
+    enable_interactive_mode: true
+
+    # General Parameters
+    use_scan_matching: true
+    use_scan_barycenter: true  # Test with false if shift persists
+    minimum_travel_distance: 0.5
+    minimum_travel_heading: 0.1  # Reduced for immediate matching during turns
+    scan_buffer_size: 5  # Reduced for recent scans
+    scan_buffer_maximum_scan_distance: 10.0
+    link_match_minimum_response_fine: 0.1
+    link_scan_maxbigr_distance: 2.5  # Increased for larger matching range
+    loop_search_maximum_distance: 3.0
+    do_loop_closing: true
+    loop_match_minimum_chain_size: 10
+    loop_match_maximum_variance_coarse: 3.0
+    loop_match_minimum_response_coarse: 0.35
+    loop_match_minimum_response_fine: 0.4
+
+    # Correlation Parameters (unchanged)
+    correlation_search_space_dimension: 0.5
+    correlation_search_space_resolution: 0.01
+    correlation_search_space_smear_deviation: 0.1
+    loop_search_space_dimension: 8.0
+    loop_search_space_resolution: 0.05
+    loop_search_space_smear_deviation: 0.03
+
+    # Scan Matcher Parameters
+    distance_variance_penalty: 0.7
+    angle_variance_penalty: 0.8  # Reduced for faster convergence
+    fine_search_angle_offset: 0.0175  # Widened for faster fine matching
+    coarse_search_angle_offset: 0.785  # Widened for faster coarse matching
+    coarse_angle_resolution: 0.0349
+    minimum_angle_penalty: 0.9
+    minimum_distance_penalty: 0.5
+    use_response_expansion: false  # Disabled to reduce computation
+    max_iterations: 200  # Added for faster scan matching

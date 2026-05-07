@@ -336,9 +336,14 @@ map → odom → base_footprint → base_link → lidar_link
 - Verify controller names match those in `4w_diff_drive_controller_velocity.yaml`
 
 ### TF world rotation / distorted SLAM map
+![WhatsApp Image 2025-01-31 at 4 05 24 PM](https://github.com/user-attachments/assets/09e742e6-99db-4a75-93c8-2361319d9a77)
 - Caused by `odom` frame drift from IMU noise during fast rotation
 - Reduce rotational speed during teleoperation while mapping
 - Verify EKF is running and fusing IMU + odom: `ros2 topic echo /odometry/filtered`
+
+> Map generated after resolving TF frame alignment issue
+
+![Resolved SLAM map](https://github.com/user-attachments/assets/4e8abd2e-03ae-41ec-b404-2a82de2e6a18)
 
 ### NVIDIA GPU / Docker issues
 - If you see `nvml error: driver not loaded`, reinstall NVIDIA drivers and reconfigure the NVIDIA Container Toolkit
@@ -361,7 +366,5 @@ map → odom → base_footprint → base_link → lidar_link
 ![Testbot TF tree](https://github.com/user-attachments/assets/26ac0b15-961a-4dd8-9d2d-2f8a9f808fb3)
 ![Testbot world view](https://github.com/user-attachments/assets/4479aa42-eeda-4079-b791-50568485f316)
 
-> Map generated after resolving TF frame alignment issue
 
-![Resolved SLAM map](https://github.com/user-attachments/assets/4e8abd2e-03ae-41ec-b404-2a82de2e6a18)
 
